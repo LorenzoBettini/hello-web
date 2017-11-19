@@ -32,6 +32,15 @@ public class HelloWorldServletIT {
 	}
 
 	@Test
+	public void sayHelloWithLink() throws Exception {
+		driver.get(HTTP_LOCALHOST_8080_HELLO_WEB);
+
+		driver.findElement(By.linkText("Hello")).click();
+
+		assertEquals("Served at: /hello-web", driver.findElement(By.tagName("body")).getText());
+	}
+
+	@Test
 	public void sayHelloWithUser() throws Exception {
 		driver.get(HTTP_LOCALHOST_8080_HELLO_WEB);
 
