@@ -6,6 +6,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang3.StringUtils;
+
 /**
  * Servlet implementation class HelloWorldServlet
  */
@@ -30,4 +32,12 @@ public class HelloWorldServlet extends HttpServlet {
 		response.getWriter().append("Served at: ").append(request.getContextPath());
 	}
 
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		String name = request.getParameter("name");
+		if (StringUtils.isEmpty(name))
+			name = "World";
+		request.setAttribute("user", name);
+		request.getRequestDispatcher("response.jsp").forward(request, response);
+	}
 }
