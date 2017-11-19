@@ -19,4 +19,5 @@ before_script:
 script:
  - export
  - mvn -f hello-web/pom.xml clean verify
+ - mvn -f hello-web/pom.xml verify -Pit-tomcat
 
