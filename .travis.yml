@@ -4,6 +4,9 @@ language: java
 
 jdk: oraclejdk8
 
+services:
+  - docker
+
 env:
   - DISPLAY=:99.0
 
@@ -20,5 +23,5 @@ script:
  - export
    # Selenium tests with Firefox seem to be flaky on Travis, so we skip them
  - mvn -f hello-web/pom.xml clean verify -Dit.test="*IT,!*FirefoxIT"
- - mvn -f hello-web/pom.xml verify -Pit-tomcat -Dit.test="*IT,!*FirefoxIT"
+ - mvn -f hello-web/pom.xml verify -Pit-tomcat,docker -Dit.test="*IT,!*FirefoxIT"
 
