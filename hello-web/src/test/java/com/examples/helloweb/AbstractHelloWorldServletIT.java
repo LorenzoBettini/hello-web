@@ -2,8 +2,11 @@ package com.examples.helloweb;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.logging.Logger;
+
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -16,6 +19,13 @@ public abstract class AbstractHelloWorldServletIT {
 
 	public AbstractHelloWorldServletIT() {
 		super();
+	}
+
+	@BeforeClass
+	public static void showURL() {
+		Logger.
+			getLogger(AbstractHelloWorldServletIT.class.toString()).
+			info("Using URL: " + HTTP_LOCALHOST_8080_HELLO_WEB);
 	}
 
 	@Before
