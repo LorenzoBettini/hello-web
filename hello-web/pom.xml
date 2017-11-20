@@ -10,6 +10,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.failsafe.version>2.20.1</maven.failsafe.version>
   </properties>
 
   <dependencies>
@@ -49,17 +50,36 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
   <build>
     <finalName>hello-web</finalName>
+    <pluginManagement>
+      <plugins>
+        <!-- configure compiler in pluginManagement so that we don't have 
+          to specify its version -->
+        <plugin>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <configuration>
+            <source>1.8</source>
+            <target>1.8</target>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>jetty-maven-plugin</artifactId>
+          <version>9.4.7.v20170914</version>
+          <configuration>
+            <scanIntervalSeconds>10</scanIntervalSeconds>
+            <webApp>
+              <contextPath>/hello-web</contextPath>
+            </webApp>
+            <stopPort>8005</stopPort>
+            <stopKey>STOP</stopKey>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
     <plugins>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.7.0</version>
-        <configuration>
-          <source>1.8</source>
-          <target>1.8</target>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-maven-plugin</artifactId>
@@ -87,7 +107,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <version>2.20.1</version>
+        <version>${maven.failsafe.version}</version>
         <executions>
           <execution>
             <goals>
@@ -98,23 +118,6 @@
         </executions>
       </plugin>
     </plugins>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-maven-plugin</artifactId>
-          <version>9.4.7.v20170914</version>
-          <configuration>
-            <scanIntervalSeconds>10</scanIntervalSeconds>
-            <webApp>
-              <contextPath>/hello-web</contextPath>
-            </webApp>
-            <stopPort>8005</stopPort>
-            <stopKey>STOP</stopKey>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
   </build>
 
   <profiles>
@@ -157,6 +160,137 @@
             <configuration>
               <skip>true</skip>
             </configuration>
+          </plugin>
+        </plugins>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <artifactId>maven-surefire-plugin</artifactId>
+              <configuration>
+                <skip>true</skip>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+    <profile>
+      <id>docker</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <properties>
+        <webapp.docker.image.basename>hello-web-tomcat-</webapp.docker.image.basename>
+        <webapp.tomcat8.localport>8081</webapp.tomcat8.localport>
+        <webapp.tomcat9.localport>8082</webapp.tomcat9.localport>
+        <dockerfile.commondir>docker-tomcat-</dockerfile.commondir>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>io.fabric8</groupId>
+            <artifactId>docker-maven-plugin</artifactId>
+            <version>0.23.0</version>
+            <configuration>
+              <images>
+                <image>
+                  <name>${webapp.docker.image.basename}8</name>
+                  <build>
+                    <dockerFileDir>${project.basedir}/${dockerfile.commondir}8</dockerFileDir>
+                    <assembly>
+                      <!-- using <name> allows our Dockerfile refer to "target" 
+                        as the source of the war, so that we can reuse the Dockerfile also for build 
+                        locally -->
+                      <name>target</name>
+                      <inline>
+                        <files>
+                          <file>
+                            <source>${project.build.directory}/${project.artifactId}.war</source>
+                          </file>
+                        </files>
+                      </inline>
+                    </assembly>
+                  </build>
+                  <run>
+                    <ports>
+                      <port>${webapp.tomcat8.localport}:8080</port>
+                    </ports>
+                  </run>
+                </image>
+                <image>
+                  <name>${webapp.docker.image.basename}9</name>
+                  <build>
+                    <dockerFileDir>${project.basedir}/${dockerfile.commondir}9</dockerFileDir>
+                    <assembly>
+                      <name>target</name>
+                      <inline>
+                        <files>
+                          <file>
+                            <source>${project.build.directory}/${project.artifactId}.war</source>
+                          </file>
+                        </files>
+                      </inline>
+                    </assembly>
+                  </build>
+                  <run>
+                    <ports>
+                      <port>${webapp.tomcat9.localport}:8080</port>
+                    </ports>
+                  </run>
+                </image>
+              </images>
+              <showLogs>true</showLogs>
+            </configuration>
+            <executions>
+              <execution>
+                <id>docker:build</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>build</goal>
+                </goals>
+              </execution>
+              <execution>
+                <id>docker:start</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>start</goal>
+                </goals>
+              </execution>
+              <execution>
+                <id>docker:stop</id>
+                <phase>post-integration-test</phase>
+                <goals>
+                  <goal>stop</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <!-- additional functional tests based on our webapp running inside
+              docker containers -->
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <version>${maven.failsafe.version}</version>
+            <executions>
+              <execution>
+                <id>docker-it-tomcat-8</id>
+                <goals>
+                  <goal>integration-test</goal>
+                </goals>
+                <configuration>
+                  <argLine>-Dcom.examples.helloweb.url=http://localhost:${webapp.tomcat8.localport}/hello-web</argLine>
+                </configuration>
+              </execution>
+              <execution>
+                <id>docker-it-tomcat-9</id>
+                <goals>
+                  <goal>integration-test</goal>
+                </goals>
+                <configuration>
+                  <argLine>-Dcom.examples.helloweb.url=http://localhost:${webapp.tomcat9.localport}/hello-web</argLine>
+                </configuration>
+              </execution>
+            </executions>
           </plugin>
         </plugins>
       </build>
