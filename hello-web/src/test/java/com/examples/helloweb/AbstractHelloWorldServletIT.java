@@ -10,7 +10,8 @@ import org.openqa.selenium.WebDriver;
 
 public abstract class AbstractHelloWorldServletIT {
 
-	private static final String HTTP_LOCALHOST_8080_HELLO_WEB = "http://localhost:8080/hello-web";
+	private static final String HTTP_LOCALHOST_8080_HELLO_WEB =
+		System.getProperty("com.examples.helloweb.url", "http://localhost:8080/hello-web");
 	private WebDriver driver;
 
 	public AbstractHelloWorldServletIT() {
